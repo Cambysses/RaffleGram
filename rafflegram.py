@@ -59,16 +59,17 @@ def get_comments(api, media_id):
     max_id = ''
     comments = []
 
+    # TODO: Clean this up, I don't even know how it works
     while has_more_comments:
         _ = api.getMediaComments(media_id, max_id=max_id)
         # comments' page come from older to newer, lets preserve desc order in full list
-        for c in reversed(api.LastJson['comments']):
-            comments.append(c)
+        for comment in reversed(api.LastJson['comments']):
+            comments.append(comment)
         has_more_comments = api.LastJson.get('has_more_comments', False)
 
         if has_more_comments:
             max_id = api.LastJson.get('next_max_id', '')
-            time.sleep(2)
+            #time.sleep(2)
     return comments
 
 
