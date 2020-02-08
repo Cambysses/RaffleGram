@@ -80,8 +80,7 @@ def convert_to_json(data):
 def get_usernames(data):
     usernames = []
     for comment in data:
-        if comment['user']['username'] != "airrreka":
-            usernames.append(comment['user']['username'])
+        usernames.append(comment['user']['username'])
     return usernames
 
 
