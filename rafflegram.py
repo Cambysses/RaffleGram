@@ -1,9 +1,8 @@
 from InstagramAPI import InstagramAPI
 import requests
-import time
 import random
 import json
-from tkinter import Tk, Label, Button, Entry
+from tkinter import Tk, Label, Button, Entry, Checkbutton, IntVar
 
 
 class RaffleGramGUI:
@@ -11,6 +10,7 @@ class RaffleGramGUI:
     def __init__(self, master):
         self.master = master
         master.title("RaffleGram")
+        self.users = []
 
         self.username_label = Label(master, text="Username:")
         self.username_entry = Entry(master)
@@ -19,27 +19,42 @@ class RaffleGramGUI:
         self.mediaid_label = Label(master, text="Post URL:")
         self.mediaid_entry = Entry(master)
         self.result_label = Label(master)
+        self.removeDuplicates_checkVar = IntVar()
+        self.removeDuplicates_check = Checkbutton(master, text="Remove duplicates", variable=self.removeDuplicates_checkVar)
         self.go_button = Button(master, text="Submit", command=self.pick_user)
+        self.refresh_button = Button(master, text="Refresh", command=self.refresh)
 
-        self.username_label.grid(row=0)
-        self.username_entry.grid(row=1)
-        self.password_label.grid(row=2)
-        self.password_entry.grid(row=3)
-        self.mediaid_label.grid(row=4)
-        self.mediaid_entry.grid(row=5)
-        self.result_label.grid(row=6)
-        self.go_button.grid(row=7)
+        self.username_label.grid(row=0, columnspan=2)
+        self.username_entry.grid(row=1, columnspan=2)
+        self.password_label.grid(row=2, columnspan=2)
+        self.password_entry.grid(row=3, columnspan=2)
+        self.mediaid_label.grid(row=4, columnspan=2)
+        self.mediaid_entry.grid(row=5, columnspan=2)
+        self.result_label.grid(row=6, columnspan=2)
+        self.removeDuplicates_check.grid(row=7)
+        self.go_button.grid(row=8, column=0)
+        self.refresh_button.grid(row=8, column=1)
 
     def pick_user(self):
-        username = self.username_entry.get()
-        password = self.password_entry.get()
-        media_id = get_media_id(self.mediaid_entry.get())
-
-        api = connect(username, password)
-        comments = get_comments(api, media_id)
+        api = connect(self.username_entry.get(), self.password_entry.get())
+        comments = get_comments(api, get_media_id(self.mediaid_entry.get()))
         comments_json = convert_to_json(comments)
-        usernames = get_usernames(comments_json)
-        self.result_label['text'] = random.choice(usernames)
+        self.users = get_usernames(comments_json)
+
+        # Remove duplicate entries if checkbox checked.
+        if self.removeDuplicates_checkVar.get():
+            self.remove_duplicates()
+
+        # Get new random name from existing list.
+        self.refresh()
+
+        for u in self.users: print(u)
+
+    def refresh(self):
+        self.result_label['text'] = random.choice(self.users)
+
+    def remove_duplicates(self):
+        self.users = list(dict.fromkeys(self.users))
 
 
 def connect(username, password):
@@ -59,17 +74,15 @@ def get_comments(api, media_id):
     max_id = ''
     comments = []
 
-    # TODO: Clean this up, I don't even know how it works
     while has_more_comments:
         _ = api.getMediaComments(media_id, max_id=max_id)
-        # comments' page come from older to newer, lets preserve desc order in full list
-        for comment in reversed(api.LastJson['comments']):
+        for comment in api.LastJson['comments']:
             comments.append(comment)
         has_more_comments = api.LastJson.get('has_more_comments', False)
 
         if has_more_comments:
             max_id = api.LastJson.get('next_max_id', '')
-            #time.sleep(2)
+
     return comments
 
 
